@@ -1,0 +1,28 @@
+name: cntpp
+channels:
+  - defaults
+  - pytorch
+  - conda-forge
+dependencies:
+  - python
+  - cudatoolkit
+  - pytorch
+  - torchvision
+  - numpy
+  - matplotlib
+  - pip
+  - tqdm
+  - git
+  - pytest
+  - scipy
+  - toolz
+  - seaborn
+  - scikit-learn
+  - pip:
+    - requests
+    - dill
+    - Pillow
+    - --editable=git+https://github.com/aliutkus/torchsearchsorted.git@5e70e9f7491ab39b386963264e84492ab4c099c1#egg=torchsearchsorted
+    - imageio
+    - mlflow
+    - pandas
