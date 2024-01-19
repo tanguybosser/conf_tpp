@@ -1,7 +1,7 @@
-import torch
 import numpy as np
-from sklearn.model_selection import train_test_split
+import torch
 from sklearn.cluster import KMeans
+from sklearn.model_selection import train_test_split
 
 from .dist_util import get_logz_samples
 from .tpp_util import get_history_and_target
@@ -15,12 +15,14 @@ def compute_region_coverage(pred, time, label_index):
                 return True
     return False
 
+
 def compute_regions_coverage(preds, times, labels):
     coverages = []
     for pred, time, label in zip(preds, times, labels):
         label_index = label.argmax(-1).item()
         coverages.append(compute_region_coverage(pred, time, label_index))
     return torch.tensor(coverages)
+
 
 def compute_region_length_joint(pred):
     length = 0
@@ -30,6 +32,7 @@ def compute_region_length_joint(pred):
             assert left <= right
             length += right - left
     return length
+
 
 def compute_region_length_time(pred):
     pred_time = pred[0]
@@ -43,10 +46,12 @@ def compute_region_length_time(pred):
         length += right - left
     return length
 
+
 def compute_region_length_mark(pred):
     length = len(list(pred.keys()))
-    return length 
-    
+    return length
+
+
 def compute_regions_length(preds, type='joint'):
     assert type in ['joint', 'time', 'mark']
     lengths = []
@@ -60,8 +65,12 @@ def compute_regions_length(preds, type='joint'):
     return torch.tensor(lengths)
 
 
+def gmean(x, offset=0.01):
+    return torch.log(x + offset).mean()
+
 
 # wsc is adapted from https://github.com/msesia/chr/blob/master/chr/coverage.py
+
 
 def wsc(reprs, coverages, delta, M=1000):
     def wsc_v(reprs, cover, delta, v):
@@ -95,19 +104,20 @@ def wsc(reprs, coverages, delta, M=1000):
         return np.random.multivariate_normal(mean, covariance, size=n)
 
     V = sample_sphere(M, reprs.shape[1])
-    #V = sample_from_normal_approximation(M, reprs)
+    # V = sample_from_normal_approximation(M, reprs)
     wsc_list = [[]] * M
     a_list = [[]] * M
     b_list = [[]] * M
     for m in range(M):
         wsc_list[m], a_list[m], b_list[m] = wsc_v(reprs, coverages, delta, V[m])
-    
+
     idx_star = np.argmin(np.array(wsc_list))
     a_star = a_list[idx_star]
     b_star = b_list[idx_star]
     v_star = V[idx_star]
     wsc_star = wsc_list[idx_star]
     return wsc_star, v_star, a_star, b_star
+
 
 def wsc_unbiased(reprs, coverages, delta, M=1000, test_size=0.75, random_state=0):
     def wsc_vab(reprs, cover, v, a, b):
@@ -117,32 +127,37 @@ def wsc_unbiased(reprs, coverages, delta, M=1000, test_size=0.75, random_state=0
         coverage = np.mean(cover[idx])
         return coverage
 
-    reprs_train, reprs_test, coverages_train, coverages_test = train_test_split(
-        reprs, coverages, test_size=test_size, random_state=random_state
-    )
+    (
+        reprs_train,
+        reprs_test,
+        coverages_train,
+        coverages_test,
+    ) = train_test_split(reprs, coverages, test_size=test_size, random_state=random_state)
     # Find adversarial parameters
     wsc_star, v_star, a_star, b_star = wsc(reprs_train, coverages_train, delta=delta, M=M)
-    #print(wsc_star, v_star, a_star, b_star)
+    # print(wsc_star, v_star, a_star, b_star)
     # Estimate coverage
     coverage = wsc_vab(reprs_test, coverages_test, v_star, a_star, b_star)
     return coverage
 
 
-def get_repr_samples_from_dl(model, dl, args):
+def get_reprs_from_dl(model, dl, args):
     reprs_list = []
     # We assume that the dataloader is not shuffled (else `coverages` and `reprs` won't match)
     assert not isinstance(dl.batch_sampler.sampler, torch.utils.data.RandomSampler)
     for batch in dl:
         with torch.no_grad():
             past_events, target_time, target_label = get_history_and_target(batch, args)
-            if args.include_poisson:        
+            if args.include_poisson:
                 process_keys = list(model.processes.keys())
-                # We only need the representations of the base process, not the Poisson. 
+                # We only need the representations of the base process, not the Poisson.
                 base_model = model.processes[process_keys[0]]
             else:
                 base_model = model
-            reprs, representations_mask, artifacts = base_model.encode(events=past_events, encoding_type='encoder')
-        reprs_list.append(reprs[:, -1, :]) # TODO: check that everything is OK
+            reprs, representations_mask, artifacts = base_model.encode(
+                events=past_events, encoding_type='encoder'
+            )
+        reprs_list.append(reprs[:, -1, :])   # TODO: check that everything is OK
 
     reprs = torch.cat(reprs_list, dim=0)
     reprs = reprs.detach().cpu()
@@ -162,56 +177,26 @@ def get_logz_samples_from_dl(model, dl, args, nb_samples=500):
     return logz_samples
 
 
-# def compute_partition_for_repr(model, dl_calib, args, nb_partitions=10):
-#     reprs = get_repr_samples_from_dl(model, dl_calib, args)
-#     kmeans = KMeans(n_clusters=nb_partitions).fit(reprs)
-#     return kmeans
-
-
-# def compute_partition_for_z(model, dl_calib, args, nb_partitions=10):
-#     z_samples = get_z_samples_from_dl(model, dl_calib, args)
-#     # The distance between two samples is similar to the profile distance of CD-split+
-#     # except that we use \hat{H}^-1 instead of \hat{H} in the definition of the distance.
-#     kmeans = KMeans(n_clusters=nb_partitions).fit(z_samples)
-#     return kmeans
-
-
-# def coverage_error_conditional_to_partition(kmeans, coverages, model, dl_test, alpha, args):
-#     z_samples = get_z_samples_from_dl(model, dl_test, args)
-#     test_partitions = kmeans.predict(z_samples)
-#     cond_coverage_list = []
-#     for i in range(kmeans.n_clusters):
-#         cond_coverages = coverages[test_partitions == i]
-#         if len(cond_coverages) == 0: # Special case: no sample in the partition
-#             cond_coverage = 0.5
-#         else:
-#             cond_coverage = cond_coverages.mean()
-#         cond_coverage_list.append(cond_coverage)
-#     cond_coverages = torch.tensor(cond_coverage_list)
-#     error = (cond_coverages - (1 - alpha)).square().mean()
-#     return error
-
-
 class ConditionalCoverageComputer:
     def __init__(self, model, alpha, args):
         self.model = model
         self.alpha = alpha
         self.args = args
-    
+
     def get_partition_features(self, dl_calib):
         pass
 
     def compute_partition(self, dl_calib, nb_partitions):
         features = self.get_partition_features(dl_calib)
         self.kmeans = KMeans(n_clusters=nb_partitions).fit(features)
-    
+
     def compute_cond_coverages(self, coverages, dl_test):
         features = self.get_partition_features(dl_test)
         test_partitions = self.kmeans.predict(features)
         cond_coverage_list = []
         for i in range(self.kmeans.n_clusters):
             cond_coverages = coverages[test_partitions == i]
-            if len(cond_coverages) == 0: # Special case: no sample in the partition
+            if len(cond_coverages) == 0:   # Special case: no sample in the partition
                 cond_coverage = 0.5
             else:
                 cond_coverage = cond_coverages.mean()
@@ -227,7 +212,7 @@ class ConditionalCoverageComputer:
 
 class ConditionalCoverageComputerForRepr(ConditionalCoverageComputer):
     def get_partition_features(self, dl_calib):
-        return get_repr_samples_from_dl(self.model, dl_calib, self.args)
+        return get_reprs_from_dl(self.model, dl_calib, self.args)
 
 
 class ConditionalCoverageComputerForZ(ConditionalCoverageComputer):

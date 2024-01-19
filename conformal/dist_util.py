@@ -13,13 +13,21 @@ def adjust_unit_tensor(x, epsilon=1e-4):
     return adjust_tensor(x, a=0.0, b=1.0, epsilon=epsilon)
 
 
-def icdf_from_cdf(cdf, alpha, epsilon=1e-7, target_precision=1e-10, warn_precision=4e-3, low=None, high=None):
+def icdf_from_cdf(
+    cdf,
+    alpha,
+    epsilon=1e-7,
+    target_precision=1e-10,
+    warn_precision=4e-3,
+    low=None,
+    high=None,
+):
     """
     Compute the quantiles of a distribution using binary search, in a vectorized way.
     """
 
     alpha = adjust_unit_tensor(alpha)
-    #alpha, _ = torch.broadcast_tensors(alpha, torch.zeros(batch_shape))
+    # alpha, _ = torch.broadcast_tensors(alpha, torch.zeros(batch_shape))
     # Expand to the left and right until we are sure that the quantile is in the interval
     expansion_factor = 4
     if low is None:
@@ -68,12 +76,13 @@ def icdf(model, alpha, past_events, low=None, high=None):
         low = last_observed_time + epsilon
         low = low.unsqueeze(-1)
     if high is None:
-        high = last_observed_time + 100 # This works because the maximum inter-event time is 10
+        high = last_observed_time + 100   # This works because the maximum inter-event time is 10
         high = high.unsqueeze(-1)
-    
+
     def cdf(query):
         cdf_value, cdf_mask = model.cdf(query=query, events=past_events)
         return cdf_value
+
     return icdf_from_cdf(cdf, alpha, low=low, high=high)
 
 
@@ -84,7 +93,7 @@ def get_logz_samples(model, past_events, nb_samples=500):
     # Sample quantile level
     alpha = torch.rand(batch_shape + (nb_samples,), device=device, dtype=torch.float64)
     alpha = alpha.sort(dim=1).values
-    #self.sanity_check_cdf(past_events)
+    # self.sanity_check_cdf(past_events)
     # Sample time
     time_sample = icdf(model, alpha, past_events)
     # Sample label

@@ -1,5 +1,5 @@
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
 
@@ -25,9 +25,17 @@ class RunConfig:
         }
         d['cal_size'] = self.cal_size
         return d
-    
+
     def get_dir_path(self, root_dir):
-        return Path(root_dir) / self.model / self.dataset / str(self.alpha) / self.conformalizer / f'cal_size={self.cal_size}' / f'run={self.run_id}'
+        return (
+            Path(root_dir)
+            / self.model
+            / self.dataset
+            / str(self.alpha)
+            / self.conformalizer
+            / f'cal_size={self.cal_size}'
+            / f'run={self.run_id}'
+        )
 
     def get_path(self, root_dir):
         return self.get_dir_path(root_dir).parent / f'run={self.run_id}.pkl'
