@@ -188,7 +188,7 @@ class ConditionalCoverageComputer:
 
     def compute_partition(self, dl_calib, nb_partitions):
         features = self.get_partition_features(dl_calib)
-        self.kmeans = KMeans(n_clusters=nb_partitions).fit(features)
+        self.kmeans = KMeans(n_clusters=nb_partitions, n_init='auto').fit(features)
 
     def compute_cond_coverages(self, coverages, dl_test):
         features = self.get_partition_features(dl_test)

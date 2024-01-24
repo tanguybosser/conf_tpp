@@ -102,8 +102,6 @@ def run_conformalizer_and_save(rc, model, loaders, args):
 def run_model(args):
     args.save_results_conf_dir = Path('results_conf') / args.exp_dir
     
-    #model_name = args.model_name_short
-    #model_name_long = args.model_name
     assert args.model_name_short is not None
     datasets = load_data(args=args)
     if args.limit_cal_size is not None:
@@ -141,6 +139,7 @@ def load_model(args, model_name=None):
     else:
         model_path = os.path.join(args.save_check_dir, args.model_name + '.pth')
     model_args = load_model_args(args)
+    args.include_poisson = model_args.include_poisson
     model = get_model(model_args)
     model.load_state_dict(th.load(model_path, map_location=args.device))
     return model 
