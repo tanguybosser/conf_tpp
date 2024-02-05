@@ -18,42 +18,13 @@ from tpps.models.encoders.self_attention import SelfAttentionEncoder
 from tpps.models.encoders.self_attention_fixed import SelfAttentionFixedEncoder
 
 from tpps.models.decoders.base.decoder import Decoder
-from tpps.models.decoders.conditional_poisson import ConditionalPoissonDecoder
-from tpps.models.decoders.conditional_poisson_cm import ConditionalPoissonCMDecoder
-from tpps.models.decoders.hawkes import HawkesDecoder
-from tpps.models.decoders.hawkes_fixed import HawkesFixedDecoder
 from tpps.models.decoders.log_normal_mixture import LogNormalMixtureDecoder
 from tpps.models.decoders.mlp_cm import MLPCmDecoder
-from tpps.models.decoders.mlp_mc import MLPMCDecoder
-from tpps.models.decoders.neural_hawkes import NeuralHawkesDecoder
 from tpps.models.decoders.poisson import PoissonDecoder
 from tpps.models.decoders.rmtpp import RMTPPDecoder
-from tpps.models.decoders.sep_rmtpp import SepRMTPPDecoder
-from tpps.models.decoders.sep_rmtpp_ch import SepRMTPPCommonHistDecoder
-from tpps.models.decoders.sep_rmtpp_ind import SepRMTPPIndDecoder
-from tpps.models.decoders.rmtpp_cm import RMTPPCmDecoder
-from tpps.models.decoders.self_attention_cm import SelfAttentionCmDecoder
-from tpps.models.decoders.self_attention_simple_cm import SelfAttentionCmDecoder as SelfAttentionSimpleCmDecoder
-from tpps.models.decoders.self_attention_mc import SelfAttentionMCDecoder
 from tpps.models.decoders.cond_log_normal_mixture import CondLogNormalMixtureDecoder
-from tpps.models.decoders.sep_log_normal_mixture import SepLogNormalMixtureDecoder
-from tpps.models.decoders.cond_mm_log_normal_mixture import CondMarkMixtureLogNormalMixtureDecoder
-from tpps.models.decoders.sep_cond_log_normal_mixture import SepCondLogNormalMixtureDecoder
 from tpps.models.decoders.thp import THP
-from tpps.models.decoders.sep_thp import SepTHP
-from tpps.models.decoders.sep_thp_ch import SepTHPCommonHist
-from tpps.models.decoders.sep_thp_mix import SepTHPMix
-from tpps.models.decoders.thp_mix import THPMix
 from tpps.models.decoders.sahp import SAHP
-from tpps.models.decoders.sep_sahp import SepSAHP
-from tpps.models.decoders.sahp_mix import SAHPMix
-from tpps.models.decoders.sep_sahp_ch import SepSAHPCommonHist
-from tpps.models.decoders.sep_sahp_mix import SepSAHPMix
-from tpps.models.decoders.sep_mlp_cm import SepMLPCmDecoder
-from tpps.models.decoders.sep_mlp_cm_mix import SepMLPCmMixDecoder
-from tpps.models.decoders.mlp_cm_mix import MLPCmMixDecoder
-from tpps.models.decoders.lnm_joint import LogNormalMixtureDecoderJoint
-from tpps.models.decoders.sep_lnm_joint import SepLogNormalMixtureDecoderJoint
 
 
 ENCODER_CLASSES = {
@@ -67,43 +38,13 @@ ENCODER_CLASSES = {
     "selfattention": SelfAttentionEncoder,
     "selfattention-fixed": SelfAttentionFixedEncoder}
 DECODER_CLASSES = {
-    "conditional-poisson": ConditionalPoissonDecoder,
-    "conditional-poisson-cm": ConditionalPoissonCMDecoder,
-    "hawkes": HawkesDecoder,
-    "hawkes_fixed": HawkesFixedDecoder,
     "log-normal-mixture": LogNormalMixtureDecoder,
     "cond-log-normal-mixture": CondLogNormalMixtureDecoder,
-    "cond-mm-log-normal-mixture": CondMarkMixtureLogNormalMixtureDecoder, 
-    "sep-log-normal-mixture": SepLogNormalMixtureDecoder, 
-    #"cond-sep-log-normal-mixture": CondSepLogNormalMixtureDecoder,
-    "sep-cond-log-normal-mixture": SepCondLogNormalMixtureDecoder, 
     "mlp-cm": MLPCmDecoder,
-    "mlp-mc": MLPMCDecoder,
-    "neural-hawkes": NeuralHawkesDecoder,
     "poisson": PoissonDecoder,
     "rmtpp": RMTPPDecoder,
-    "sep-rmtpp":SepRMTPPDecoder,
-    "sep-rmtpp-ch":SepRMTPPCommonHistDecoder,
-    "sep-rmtpp-ind":SepRMTPPIndDecoder,
-    "rmtpp-cm": RMTPPCmDecoder,
-    "selfattention-cm": SelfAttentionCmDecoder,
-    "selfattention-simple-cm": SelfAttentionSimpleCmDecoder,
-    "selfattention-mc": SelfAttentionMCDecoder,
     "thp": THP,
-    "sep-thp": SepTHP,
-    "sep-thp-ch": SepTHPCommonHist,
-    "sep-thp-mix": SepTHPMix,
-    "thp-mix": THPMix,
-    "sahp":SAHP,
-    "sep-sahp":SepSAHP,
-    "sep-sahp-ch":SepSAHPCommonHist,
-    "sep-sahp-mix":SepSAHPMix,
-    "sahp-mix":SAHPMix,
-    "sep-mlp-cm":SepMLPCmDecoder,
-    "sep-mlp-cm-mix":SepMLPCmMixDecoder,
-    "mlp-cm-mix":MLPCmMixDecoder,
-    "lnm-joint": LogNormalMixtureDecoderJoint,
-    "sep-lnm-joint": SepLogNormalMixtureDecoderJoint}
+    "sahp":SAHP}
 
 
 ENCODER_NAMES = sorted(list(ENCODER_CLASSES.keys()))
@@ -151,17 +92,17 @@ def instantiate_encoder_or_decoder(
 
 
 def get_model(args: Namespace) -> EncDecProcess:
-    args.decoder_units_mlp = args.decoder_units_mlp + [args.marks] #[] + [2]
+    args.decoder_units_mlp = args.decoder_units_mlp + [args.marks] 
 
     decoder: Decoder 
-    decoder = instantiate_encoder_or_decoder(args, component="decoder") #default = Hawkes
+    decoder = instantiate_encoder_or_decoder(args, component="decoder")
 
     if decoder.input_size is not None:
         args.encoder_units_mlp = args.encoder_units_mlp + [decoder.input_size]
     #assert((args.encoder_time is None and args.encoder_mark is None and args.encoder is not None) or (args.encoder_time is not None and args.encoder_mark is not None and args.encoder is None ))
     if args.encoder is not None:
         encoder: Encoder
-        encoder = instantiate_encoder_or_decoder(args, component="encoder") #default=stub
+        encoder = instantiate_encoder_or_decoder(args, component="encoder") 
         process = EncDecProcess(
         encoder=encoder, encoder_time=None, encoder_mark=None, decoder=decoder, multi_labels=args.multi_labels)
     else:
@@ -174,9 +115,9 @@ def get_model(args: Namespace) -> EncDecProcess:
     #Merge encoder and decoder into a single class (subclass of Process, which is a nn.module)
     if args.include_poisson: #True by default
         processes = {process.name: process}
-        processes.update({"poisson": PoissonProcess(marks=process.marks)}) #PoissonProcess subclass of EncDecProcess(with Poisson encoder and decoder, i.e. only param by mu)
+        processes.update({"poisson": PoissonProcess(marks=process.marks)})
         process = ModularProcess(
-            processes=processes, args=args) #use_coefficients default True
+            processes=processes, args=args) 
         #merges multiple processes as one process (ex Poisson and stub-Hawkes)
     process = process.to(device=args.device)
 

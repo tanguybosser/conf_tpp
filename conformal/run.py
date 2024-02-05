@@ -112,6 +112,7 @@ def run_model(args):
         'test': get_loader(datasets['test'], args=args, shuffle=False),
     }
     model = load_model(args)
+    args.include_poisson = False if not 'poisson' in args.model_name_short else True
     print(f'====== Model: {args.model_name_short} ======')
     for alpha in args.alphas_cal:
         print(f'=== alpha: {alpha} ===')
